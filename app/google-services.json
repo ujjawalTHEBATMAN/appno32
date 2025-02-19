@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "787308673077",
+    "project_id": "examtimetablemanagement",
+    "storage_bucket": "examtimetablemanagement.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:787308673077:android:3a631c47e5079ff974197c",
+        "android_client_info": {
+          "package_name": "com.example.examtimetablemanagement"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC5iYzKPHmVxvJxDXzyaiO4SqiZA-CW1Vs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
