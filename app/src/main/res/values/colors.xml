@@ -3,5 +3,17 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="loginTextViewNavigator">#3A5BFD</color>
+    <color name="gradientStart">#4CAF50</color>
+    <color name="gradientMiddle">#2196F3</color>
+    <color name="gradientEnd">#9C27B0</color>
+    <color name="primaryColor">#1976D2</color>
+    <color name="primaryDarkColor">#1565C0</color>
+    <color name="primaryTextColor">#FFFFFF</color>
+    <color name="secondaryTextColor">#757575</color>
+    <color name="dark_surface">#1A1A2E</color>
+    <color name="dark_surface_variant">#16213E</color>
+    <color name="neon_blue">#00E0FF</color>
+    <color name="neon_blue_alpha">#4000E0FF</color>
+    <color name="transparent">#66000000</color>
 
 </resources>

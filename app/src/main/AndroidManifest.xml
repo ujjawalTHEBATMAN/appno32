@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.INTERNET" />
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -13,13 +14,19 @@
         android:theme="@style/Theme.ExamTimeTableManagement"
         tools:targetApi="31">
         <activity
-            android:name=".authenTication.RegistrationActivity"
+            android:name=".authenTication.regestration.Registration3"
+            android:exported="false" />
+        <activity
+            android:name=".authenTication.regestration.Registration2"
+            android:exported="false" />
+        <activity
+            android:name=".authenTication.regestration.RegistrationActivity"
             android:exported="false" />
         <activity
             android:name=".DashboardActivity.DashboardActivity"
             android:exported="false" />
         <activity
-            android:name=".authenTication.loginActivity"
+            android:name=".authenTication.login.loginActivity"
             android:exported="false" />
         <activity
             android:name=".MainActivity"
