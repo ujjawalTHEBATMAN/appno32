@@ -37,14 +37,12 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Get screen dimensions
         screenWidth = getResources().getDisplayMetrics().widthPixels;
         screenHeight = getResources().getDisplayMetrics().heightPixels;
-
-        // Initialize views
         initializeViews();
 
-        // Post layout to ensure views are measured
+
+
         new Handler().postDelayed(() -> {
             try {
                 startSplashAnimations();
@@ -54,8 +52,6 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "Animation Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         }, 100);
-
-        // Handle navigation after animations
         new Handler().postDelayed(this::navigateToMain, 3500);
     }
 
@@ -65,8 +61,6 @@ public class MainActivity extends AppCompatActivity {
         appTitle = findViewById(R.id.appTitle);
         loadingIndicator = findViewById(R.id.loadingIndicator);
         versionText = findViewById(R.id.versionText);
-
-        // Initially hide views for animations
         logoContainer.setScaleX(0);
         logoContainer.setScaleY(0);
         appTitle.setAlpha(0);
@@ -75,7 +69,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startSplashAnimations() {
-        // Logo reveal animation
         int centerX = logoContainer.getWidth() / 2;
         int centerY = logoContainer.getHeight() / 2;
         float finalRadius = (float) Math.hypot(centerX, centerY);
@@ -85,7 +78,13 @@ public class MainActivity extends AppCompatActivity {
         circularReveal.setDuration(1000);
         circularReveal.setInterpolator(new AccelerateDecelerateInterpolator());
 
-        // Scale animation for logo
+
+
+
+
+
+
+
         ObjectAnimator scaleX = ObjectAnimator.ofFloat(logoContainer, "scaleX", 0f, 1.2f, 1f);
         ObjectAnimator scaleY = ObjectAnimator.ofFloat(logoContainer, "scaleY", 0f, 1.2f, 1f);
         scaleX.setDuration(1200);
@@ -93,7 +92,11 @@ public class MainActivity extends AppCompatActivity {
         scaleX.setInterpolator(new AnticipateOvershootInterpolator());
         scaleY.setInterpolator(new AnticipateOvershootInterpolator());
 
-        // Fade in animations
+
+
+
+
+
         ObjectAnimator titleFade = ObjectAnimator.ofFloat(appTitle, "alpha", 0f, 1f);
         titleFade.setDuration(800);
         titleFade.setStartDelay(500);
@@ -106,7 +109,12 @@ public class MainActivity extends AppCompatActivity {
         versionFade.setDuration(500);
         versionFade.setStartDelay(1000);
 
-        // Play animations together
+
+
+
+
+
+
         AnimatorSet animatorSet = new AnimatorSet();
         animatorSet.playTogether(circularReveal, scaleX, scaleY, titleFade, loadingFade, versionFade);
         animatorSet.start();

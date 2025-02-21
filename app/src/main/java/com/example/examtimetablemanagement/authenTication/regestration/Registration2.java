@@ -12,13 +12,12 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import com.example.examtimetablemanagement.DashboardActivity.DashboardActivity;
+import com.example.examtimetablemanagement.fragments.fragmentHolder;
 import com.example.examtimetablemanagement.R;
 import com.example.examtimetablemanagement.authenTication.regestration.Registration2CardUtils.College;
-import com.example.examtimetablemanagement.authenTication.regestration.Registration2CardUtils.CollegeAdapter;
+import com.example.examtimetablemanagement.adapters.CollegeAdapter;
 import com.example.examtimetablemanagement.authenTication.login.loginActivity;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -41,8 +40,8 @@ public class Registration2 extends AppCompatActivity {
     private String selectedCollegeName = null;
     private String role;
 
-    // regestration old info are save on this variable
-    private String regName, regEmail, regPassword,regImagesss;
+    // Registration info passed from previous activity
+    private String regName, regEmail, regPassword, regImagesss;
 
     private DatabaseReference collegesReference;
 
@@ -55,15 +54,13 @@ public class Registration2 extends AppCompatActivity {
         fabAddCollege = findViewById(R.id.fabAddCollege);
         btnNext = findViewById(R.id.btnNext);
         btnNext.setEnabled(false);
-
-        // retrieve registration info from previous activity
         role = getIntent().getStringExtra("role");
         regName = getIntent().getStringExtra("name");
         regEmail = getIntent().getStringExtra("email");
         regPassword = getIntent().getStringExtra("password");
         regImagesss = getIntent().getStringExtra("imageString");
 
-        // Only show to admin
+        // Only show add-college option to admin
         if (role != null && role.toLowerCase(Locale.US).equals("admin")) {
             fabAddCollege.setVisibility(FloatingActionButton.VISIBLE);
         } else {
@@ -116,15 +113,13 @@ public class Registration2 extends AppCompatActivity {
             if (role != null && role.toLowerCase(Locale.US).equals("admin")) {
                 saveAdminDataAndNavigate();
             } else {
-                //  non admin intent directly to dashboard
                 Intent intent = new Intent(Registration2.this, Registration3.class);
                 intent.putExtra("selectedCollege", selectedCollegeName);
-
-                intent.putExtra("name", regName);
+                intent.putExtra("name", regName);  // Used as the username
                 intent.putExtra("email", regEmail);
                 intent.putExtra("password", regPassword);
                 intent.putExtra("role", role);
-                intent.putExtra("imagess",regImagesss);
+                intent.putExtra("imagess", regImagesss);
                 startActivity(intent);
             }
         });
@@ -137,7 +132,6 @@ public class Registration2 extends AppCompatActivity {
         builder.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                // Remove college from Firebase Database
                 collegesReference.child(college.getId()).removeValue()
                         .addOnCompleteListener(task -> {
                             if (task.isSuccessful()) {
@@ -175,7 +169,6 @@ public class Registration2 extends AppCompatActivity {
     }
 
     private void addCollegeToDatabase(String collegeName) {
-        // Generate a new unique key.
         String collegeId = collegesReference.push().getKey();
         if (collegeId != null) {
             College newCollege = new College(collegeId, collegeName, "default/collageimage.png");
@@ -184,33 +177,30 @@ public class Registration2 extends AppCompatActivity {
     }
 
     private void saveAdminDataAndNavigate() {
-        // Prepare user data to save into Firebase Realtime Database
-        DatabaseReference userInformationRef = FirebaseDatabase.getInstance().getReference("userInformation");
+        DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("users");
         Map<String, Object> userData = new HashMap<>();
         userData.put("name", regName);
+        userData.put("username", regName);
         userData.put("email", regEmail);
-        userData.put("userRole", role);
+        userData.put("password", regPassword);
+        userData.put("image", regImagesss);
         userData.put("college", selectedCollegeName);
+        userData.put("department", "N/A");
+        userData.put("semester", "N/A");
+        userData.put("userRole", role);
         userData.put("createdAt", ServerValue.TIMESTAMP);
         userData.put("lastLogin", ServerValue.TIMESTAMP);
-        userData.put("imagess",regImagesss);
-        FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
-        String userId = firebaseAuth.getCurrentUser() != null
-                ? firebaseAuth.getCurrentUser().getUid()
-                : userInformationRef.push().getKey();
 
-        if (userId == null) {
-            Toast.makeText(this, "Error generating user id", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        userInformationRef.child(userId).setValue(userData)
+        usersRef.child(regName).setValue(userData)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        // Create a session and navigate to Dashboard
                         loginActivity.SessionManagement sessionManagement = new loginActivity.SessionManagement(Registration2.this);
-                        sessionManagement.createLoginSession(userId, regEmail, regName, role, regImagesss);
-                        Intent dashboardIntent = new Intent(Registration2.this, DashboardActivity.class);
+                        sessionManagement.createLoginSession(
+                                regName, regEmail, regName, role, regImagesss,
+                                selectedCollegeName, "N/A", "N/A",
+                                System.currentTimeMillis(), System.currentTimeMillis()
+                        );
+                        Intent dashboardIntent = new Intent(Registration2.this, fragmentHolder.class);
                         startActivity(dashboardIntent);
                         finish();
                     } else {

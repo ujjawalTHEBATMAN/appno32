@@ -23,7 +23,7 @@
             android:name=".authenTication.regestration.RegistrationActivity"
             android:exported="false" />
         <activity
-            android:name=".DashboardActivity.DashboardActivity"
+            android:name=".fragments.fragmentHolder"
             android:exported="false" />
         <activity
             android:name=".authenTication.login.loginActivity"

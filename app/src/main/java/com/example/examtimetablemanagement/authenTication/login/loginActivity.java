@@ -13,27 +13,21 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import com.example.examtimetablemanagement.DashboardActivity.DashboardActivity;
 import com.example.examtimetablemanagement.R;
+import com.example.examtimetablemanagement.fragments.fragmentHolder;
 import com.example.examtimetablemanagement.authenTication.regestration.RegistrationActivity;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.AuthResult;
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
 public class loginActivity extends AppCompatActivity {
 
-    private EditText editTextUserName;
+    private EditText editTextUserInput;
     private EditText editTextPassword;
     private Button buttonLogin;
     private TextView textViewRegister;
-    private FirebaseAuth firebaseAuthInstance;
     private SessionManagement sessionManagement;
 
     @SuppressLint("MissingInflatedId")
@@ -42,18 +36,16 @@ public class loginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        // Initialize FirebaseAuth and SessionManagement
-        firebaseAuthInstance = FirebaseAuth.getInstance();
+        // Initialize SessionManagement
         sessionManagement = new SessionManagement(this);
 
         // If a session already exists, redirect to DashboardActivity immediately.
         if (sessionManagement.isLoggedIn()) {
-            startActivity(new Intent(loginActivity.this, DashboardActivity.class));
+            startActivity(new Intent(loginActivity.this, fragmentHolder.class));
             finish();
             return;
         }
-
-        editTextUserName = findViewById(R.id.etEmail);
+        editTextUserInput = findViewById(R.id.etUser);
         editTextPassword = findViewById(R.id.etPassword);
         buttonLogin = findViewById(R.id.btnLogin);
         textViewRegister = findViewById(R.id.tvRegister);
@@ -61,97 +53,61 @@ public class loginActivity extends AppCompatActivity {
         buttonLogin.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String userInput = ((EditText)findViewById(R.id.etUser)).getText().toString().trim();
-                String userPasswordInput = editTextPassword.getText().toString().trim();
+                final String usernameInput = editTextUserInput.getText().toString().trim();
+                final String passwordInput = editTextPassword.getText().toString().trim();
 
-                if (TextUtils.isEmpty(userInput) || TextUtils.isEmpty(userPasswordInput)) {
-                    Toast.makeText(loginActivity.this, "Please enter your email/name and password", Toast.LENGTH_SHORT).show();
+                if (TextUtils.isEmpty(usernameInput) || TextUtils.isEmpty(passwordInput)) {
+                    Toast.makeText(loginActivity.this, "Please enter your username and password", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                // email validation
-                if (userInput.contains("@")) {
-                    firebaseAuthInstance.signInWithEmailAndPassword(userInput, userPasswordInput)
-                            .addOnCompleteListener(loginActivity.this, new OnCompleteListener<AuthResult>() {
-                                @Override
-                                public void onComplete(@NonNull Task<AuthResult> signInTask) {
-                                    if (signInTask.isSuccessful()) {
-                                        sessionManagement.createLoginSession(
-                                                firebaseAuthInstance.getCurrentUser().getUid(),
-                                                userInput,
-                                                "UserName",
-                                                "userRole",
-                                                "default/collageimage.png"
-                                        );
-                                        startActivity(new Intent(loginActivity.this, DashboardActivity.class));
-                                        finish();
-                                    } else {
-                                        Toast.makeText(loginActivity.this, "Username/email or password is incorrect", Toast.LENGTH_SHORT).show();
-                                    }
-                                }
-                            });
-                } else {
-                    // Input
-                    DatabaseReference userInformationReference = FirebaseDatabase.getInstance().getReference("userInformation");
-                    Query usernameQuery = userInformationReference.orderByChild("name").equalTo(userInput);
-                    usernameQuery.addListenerForSingleValueEvent(new ValueEventListener() {
-                        @Override
-                        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                            if (dataSnapshot.exists()) {
-                                String retrievedEmail = null;
-                                String retrievedName = null;
-                                String retrievedUserRole = null;
-                                String retrievedProfileImage = null;
-                                String userId = null;
-                                for (DataSnapshot userSnapshot : dataSnapshot.getChildren()) {
-                                    retrievedEmail = userSnapshot.child("email").getValue(String.class);
-                                    retrievedName = userSnapshot.child("name").getValue(String.class);
-                                    retrievedUserRole = userSnapshot.child("userRole").getValue(String.class);
-                                    retrievedProfileImage = userSnapshot.child("profileImage").getValue(String.class);
-                                    userId = userSnapshot.getKey();
-                                    break;
-                                }
-                                if (retrievedEmail != null) {
-                                    String finalUserId = userId;
-                                    String finalRetrievedEmail = retrievedEmail;
-                                    String finalRetrievedName = retrievedName;
-                                    String finalRetrievedUserRole = retrievedUserRole;
-                                    String finalRetrievedProfileImage = retrievedProfileImage;
-                                    firebaseAuthInstance.signInWithEmailAndPassword(retrievedEmail, userPasswordInput)
-                                            .addOnCompleteListener(loginActivity.this, new OnCompleteListener<AuthResult>() {
-                                                @Override
-                                                public void onComplete(@NonNull Task<AuthResult> signInTask) {
-                                                    if (signInTask.isSuccessful()) {
-                                                        sessionManagement.createLoginSession(
-                                                                finalUserId,
-                                                                finalRetrievedEmail,
-                                                                finalRetrievedName,
-                                                                finalRetrievedUserRole,
-                                                                finalRetrievedProfileImage != null ? finalRetrievedProfileImage : "default/collageimage.png"
-                                                        );
-                                                        startActivity(new Intent(loginActivity.this, DashboardActivity.class));
-                                                        finish();
-                                                    } else {
-                                                        Toast.makeText(loginActivity.this, "Username or password is incorrect", Toast.LENGTH_SHORT).show();
-                                                    }
-                                                }
-                                            });
-                                } else {
-                                    Toast.makeText(loginActivity.this, "User email not found", Toast.LENGTH_SHORT).show();
-                                }
-                            } else {
-                                Toast.makeText(loginActivity.this, "User information not found", Toast.LENGTH_SHORT).show();
-                            }
-                        }
+                DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("users");
+                usersRef.child(usernameInput).addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        if (snapshot.exists()) {
+                            String storedPassword = snapshot.child("password").getValue(String.class);
+                            if (passwordInput.equals(storedPassword)) {
+                                // Retrieve all user data
+                                String name = snapshot.child("name").getValue(String.class);
+                                String email = snapshot.child("email").getValue(String.class);
+                                String userRole = snapshot.child("userRole").getValue(String.class);
+                                String profileImage = snapshot.child("image").getValue(String.class);
+                                String college = snapshot.child("college").getValue(String.class);
+                                String department = snapshot.child("department").getValue(String.class);
+                                String semester = snapshot.child("semester").getValue(String.class);
+                                Long createdAt = snapshot.child("createdAt").getValue(Long.class);
+                                Long lastLogin = snapshot.child("lastLogin").getValue(Long.class);
 
-                        @Override
-                        public void onCancelled(@NonNull DatabaseError databaseError) {
-                            Toast.makeText(loginActivity.this, "Database error", Toast.LENGTH_SHORT).show();
+                                // Create session with the retrieved data (username is used as the unique key)
+                                sessionManagement.createLoginSession(
+                                        usernameInput,
+                                        email,
+                                        name,
+                                        userRole,
+                                        profileImage,
+                                        college,
+                                        department,
+                                        semester,
+                                        createdAt != null ? createdAt : 0,
+                                        lastLogin != null ? lastLogin : 0
+                                );
+
+                                startActivity(new Intent(loginActivity.this, fragmentHolder.class));
+                                finish();
+                            } else {
+                                Toast.makeText(loginActivity.this, "Incorrect password", Toast.LENGTH_SHORT).show();
+                            }
+                        } else {
+                            Toast.makeText(loginActivity.this, "User not found", Toast.LENGTH_SHORT).show();
                         }
-                    });
-                }
+                    }
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        Toast.makeText(loginActivity.this, "Database error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         });
-
 
         textViewRegister.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -160,15 +116,18 @@ public class loginActivity extends AppCompatActivity {
             }
         });
     }
-
     public static class SessionManagement {
         private static final String PREF_NAME = "UserSession";
         private static final String KEY_IS_LOGGED_IN = "isLoggedIn";
-        private static final String KEY_USER_ID = "userId";
+        private static final String KEY_USERNAME = "username";
         private static final String KEY_EMAIL = "email";
         private static final String KEY_NAME = "name";
         private static final String KEY_USER_ROLE = "userRole";
         private static final String KEY_PROFILE_IMAGE = "profileImage";
+        private static final String KEY_COLLEGE = "college";
+        private static final String KEY_DEPARTMENT = "department";
+        private static final String KEY_SEMESTER = "semester";
+        private static final String KEY_CREATED_AT = "createdAt";
         private static final String KEY_LAST_LOGIN = "lastLogin";
 
         private SharedPreferences pref;
@@ -177,41 +136,50 @@ public class loginActivity extends AppCompatActivity {
 
         public SessionManagement(Context context) {
             this.context = context;
-            pref = context.getSharedPreferences(PREF_NAME, MODE_PRIVATE);
+            pref = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
             editor = pref.edit();
         }
-        public void createLoginSession(String userId, String email, String name, String userRole, String profileImage) {
+
+        public void createLoginSession(String username, String email, String name, String userRole,
+                                       String profileImage, String college, String department,
+                                       String semester, long createdAt, long lastLogin) {
             editor.putBoolean(KEY_IS_LOGGED_IN, true);
-            editor.putString(KEY_USER_ID, userId);
+            editor.putString(KEY_USERNAME, username);
             editor.putString(KEY_EMAIL, email);
             editor.putString(KEY_NAME, name);
             editor.putString(KEY_USER_ROLE, userRole);
             editor.putString(KEY_PROFILE_IMAGE, profileImage);
-            editor.putLong(KEY_LAST_LOGIN, System.currentTimeMillis());
+            editor.putString(KEY_COLLEGE, college);
+            editor.putString(KEY_DEPARTMENT, department);
+            editor.putString(KEY_SEMESTER, semester);
+            editor.putLong(KEY_CREATED_AT, createdAt);
+            editor.putLong(KEY_LAST_LOGIN, lastLogin);
             editor.apply();
         }
+
+
+
 
         public boolean isLoggedIn() {
             return pref.getBoolean(KEY_IS_LOGGED_IN, false);
         }
-        public String getUserId() {
-            return pref.getString(KEY_USER_ID, null);
-        }
-        public String getEmail() {
-            return pref.getString(KEY_EMAIL, null);
-        }
-        public String getName() {
-            return pref.getString(KEY_NAME, null);
-        }
-        public String getUserRole() {
-            return pref.getString(KEY_USER_ROLE, null);
-        }
-        public String getProfileImage() {
-            return pref.getString(KEY_PROFILE_IMAGE, null);
-        }
-        public long getLastLoginTime() {
-            return pref.getLong(KEY_LAST_LOGIN, 0);
-        }
+
+
+
+
+
+
+        public String getUsername() { return pref.getString(KEY_USERNAME, null); }
+        public String getEmail() { return pref.getString(KEY_EMAIL, null); }
+        public String getName() { return pref.getString(KEY_NAME, null); }
+        public String getUserRole() { return pref.getString(KEY_USER_ROLE, null); }
+        public String getProfileImage() { return pref.getString(KEY_PROFILE_IMAGE, null); }
+        public String getCollege() { return pref.getString(KEY_COLLEGE, null); }
+        public String getDepartment() { return pref.getString(KEY_DEPARTMENT, null); }
+        public String getSemester() { return pref.getString(KEY_SEMESTER, null); }
+        public long getCreatedAt() { return pref.getLong(KEY_CREATED_AT, 0); }
+        public long getLastLogin() { return pref.getLong(KEY_LAST_LOGIN, 0); }
+
         public void logout() {
             editor.clear();
             editor.apply();

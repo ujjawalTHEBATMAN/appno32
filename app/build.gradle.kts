@@ -44,4 +44,9 @@ dependencies {
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
     implementation ("com.cloudinary:cloudinary-android:2.3.1")
+    implementation ("com.github.bumptech.glide:glide:4.12.0")
+    implementation ("com.facebook.shimmer:shimmer:0.5.0")
+    implementation ("de.hdodenhof:circleimageview:3.1.0")
+    implementation ("com.google.android.material:material:1.5.0")
+
 }
