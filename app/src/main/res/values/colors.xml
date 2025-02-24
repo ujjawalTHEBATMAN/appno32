@@ -15,5 +15,38 @@
     <color name="neon_blue">#00E0FF</color>
     <color name="neon_blue_alpha">#4000E0FF</color>
     <color name="transparent">#66000000</color>
+        <color name="primary">#1E88E5</color>
+        <color name="primary_dark">#1565C0</color>
+        <color name="primary_light">#64B5F6</color>
+        <color name="primary_variant">#2196F3</color>
+        <color name="secondary">#26A69A</color>
+        <color name="secondary_dark">#00897B</color>
+        <color name="secondary_light">#4DB6AC</color>
+        <color name="background">#FAFAFA</color>
+        <color name="surface">#FFFFFF</color>
+        <color name="card_background">#FFFFFF</color>
+        <color name="text_primary">#212121</color>
+        <color name="text_secondary">#757575</color>
+        <color name="text_hint">#9E9E9E</color>
+        <color name="text_on_primary">#FFFFFF</color>
+        <color name="success">#43A047</color>
+        <color name="error">#E53935</color>
+        <color name="warning">#FFA000</color>
+        <color name="info">#039BE5</color>
+        <color name="calendar_selected">#1E88E5</color>
+        <color name="calendar_today">#26A69A</color>
+        <color name="table_header">#1E88E5</color>
+        <color name="table_row_even">#F5F5F5</color>
+        <color name="table_row_odd">#FFFFFF</color>
+        <color name="button_primary">#1E88E5</color>
+        <color name="button_secondary">#26A69A</color>
+        <color name="button_disabled">#BDBDBD</color>
+        <color name="divider">#EEEEEE</color>
+        <color name="border_light">#E0E0E0</color>
+        <color name="border_dark">#BDBDBD</color>
+        <color name="scrim">#52000000</color>
+        <color name="overlay_light">#1FFFFFFF</color>
+        <color name="overlay_dark">#52000000</color>
+
 
 </resources>

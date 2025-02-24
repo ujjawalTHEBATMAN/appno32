@@ -16,26 +16,27 @@ import com.example.examtimetablemanagement.authenTication.login.loginActivity;
 import com.facebook.shimmer.ShimmerFrameLayout;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textview.MaterialTextView;
 import com.google.firebase.database.*;
-
+import de.hdodenhof.circleimageview.CircleImageView;
 import java.util.HashMap;
 import java.util.Map;
 
-import de.hdodenhof.circleimageview.CircleImageView;
-
 public class profileFragment extends Fragment {
 
+    // View declarations
     private ShimmerFrameLayout shimmerLayout;
     private CircleImageView profileImage;
+    private MaterialButton logoutButton;
+    private loginActivity.SessionManagement sessionManagement;
     private MaterialTextView nameText, emailText, collegeText, departmentText,
             semesterText, userRoleText, createdAtText, lastLoginText;
     private ExtendedFloatingActionButton editProfileFab;
     private DatabaseReference userRef;
-    private loginActivity.SessionManagement sessionManagement;
+    private View editProfileCardView;
+    private boolean isEditProfileCardVisible = false;
 
     public profileFragment() {
         // Required empty public constructor
@@ -55,12 +56,11 @@ public class profileFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_profile, container, false);
-
         initializeViews(view);
         setupProfileImage();
         loadProfileData();
         setupFabButton();
-
+        setupLogoutButton();
         return view;
     }
 
@@ -76,79 +76,71 @@ public class profileFragment extends Fragment {
         createdAtText = view.findViewById(R.id.createdAtText);
         lastLoginText = view.findViewById(R.id.lastLoginText);
         editProfileFab = view.findViewById(R.id.editProfileFab);
+        logoutButton = view.findViewById(R.id.logoutButton);
 
-        sessionManagement = new loginActivity.SessionManagement(getContext());
+        sessionManagement = new loginActivity.SessionManagement(requireContext());
     }
 
     private void setupProfileImage() {
         shimmerLayout.startShimmer();
-
-        profileImage.setOnClickListener(v -> {showFullScreenImage();
-        });
+        profileImage.setOnClickListener(v -> showFullScreenImage());
     }
 
     private void loadProfileData() {
         String sessionUsername = sessionManagement.getUsername();
         if (sessionUsername == null) {
-            showMessage("no more session");
+            showMessage("Session expired");
             return;
         }
 
-        DatabaseReference currentUserRef = userRef.child(sessionUsername);
-        currentUserRef.addListenerForSingleValueEvent(new ValueEventListener() {
+        userRef.child(sessionUsername).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (snapshot.exists()) {
                     TransitionManager.beginDelayedTransition((ViewGroup) getView());
-
                     updateUIWithUserData(snapshot);
                     loadProfileImage(snapshot.child("image").getValue(String.class));
-
                     shimmerLayout.stopShimmer();
                     shimmerLayout.setVisibility(View.GONE);
                 } else {
-                    showMessage("user informtion not found");
+                    showMessage("User not found");
                 }
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                showMessage("database fucked : " + error.getMessage());
+                showMessage("Database error: " + error.getMessage());
             }
         });
     }
 
     private void updateUIWithUserData(DataSnapshot snapshot) {
-        String retrievedEmail = snapshot.child("email").getValue(String.class);
-        String retrievedName = snapshot.child("name").getValue(String.class);
-        String retrievedUserRole = snapshot.child("userRole").getValue(String.class);
-        String retrievedCollege = snapshot.child("college").getValue(String.class);
-        String retrievedDepartment = snapshot.child("department").getValue(String.class);
-        String retrievedSemester = snapshot.child("semester").getValue(String.class);
+        nameText.setText(getValueOrNA(snapshot, "name"));
+        emailText.setText(getValueOrNA(snapshot, "email"));
+        userRoleText.setText(getValueOrNA(snapshot, "userRole"));
+        collegeText.setText(formatValue("College", snapshot, "college"));
+        departmentText.setText(formatValue("Department", snapshot, "department"));
+        semesterText.setText(formatValue("Semester", snapshot, "semester"));
+        createdAtText.setText(formatValue("Created At", snapshot, "createdAt"));
+        lastLoginText.setText(formatValue("Last Login", snapshot, "lastLogin"));
+    }
 
-        Long retrievedCreatedAt = snapshot.child("createdAt").getValue(Long.class);
-        Long retrievedLastLogin = snapshot.child("lastLogin").getValue(Long.class);
+    private String getValueOrNA(DataSnapshot snapshot, String key) {
+        return snapshot.child(key).exists() ?
+                snapshot.child(key).getValue().toString() : "N/A";
+    }
 
-        nameText.setText(retrievedName != null ? retrievedName : "N/A");
-        emailText.setText(retrievedEmail != null ? retrievedEmail : "N/A");
-        userRoleText.setText(retrievedUserRole != null ? retrievedUserRole : "N/A");
-        collegeText.setText("College: " + (retrievedCollege != null ? retrievedCollege : "N/A"));
-        departmentText.setText("Department: " + (retrievedDepartment != null ? retrievedDepartment : "N/A"));
-        semesterText.setText("Semester: " + (retrievedSemester != null ? retrievedSemester : "N/A"));
-        createdAtText.setText("Created At: " + (retrievedCreatedAt != null ? retrievedCreatedAt : "N/A"));
-        lastLoginText.setText("Last Login: " + (retrievedLastLogin != null ? retrievedLastLogin : "N/A"));
+    private String formatValue(String prefix, DataSnapshot snapshot, String key) {
+        return String.format("%s: %s", prefix, getValueOrNA(snapshot, key));
     }
 
     private void loadProfileImage(String imageUrl) {
         Glide.with(requireContext())
-                .load(imageUrl != null ? imageUrl : "default/collageimage.png")
+                .load(imageUrl != null ? imageUrl : R.drawable.collageimage)
                 .transition(DrawableTransitionOptions.withCrossFade())
                 .placeholder(R.drawable.collageimage)
                 .into(profileImage);
     }
-
-    private View editProfileCardView;
-    private boolean isEditProfileCardVisible = false;
 
     private void setupFabButton() {
         editProfileFab.setOnClickListener(v -> {
@@ -161,94 +153,83 @@ public class profileFragment extends Fragment {
 
     private void showEditProfileCard() {
         if (getView() == null) return;
+
         if (editProfileCardView == null) {
             editProfileCardView = LayoutInflater.from(requireContext())
                     .inflate(R.layout.edit_profile_card, (ViewGroup) getView(), false);
             ((ViewGroup) getView()).addView(editProfileCardView);
-
             setupEditProfileCard();
-
-            editProfileCardView.setOnClickListener(v -> hideEditProfileCard());
-
-
-
-
-            editProfileCardView.findViewById(R.id.editProfileCardContent)
-                    .setOnClickListener(v -> {
-
-                    });
         }
 
-
-
-        // anime
         editProfileCardView.setVisibility(View.VISIBLE);
         editProfileCardView.setAlpha(0f);
         editProfileCardView.animate()
                 .alpha(1f)
                 .setDuration(300)
                 .start();
-
         isEditProfileCardVisible = true;
     }
 
     private void setupEditProfileCard() {
-        TextInputEditText nameInput = editProfileCardView.findViewById(R.id.nameInput);
         TextInputEditText collegeInput = editProfileCardView.findViewById(R.id.collegeInput);
         TextInputEditText departmentInput = editProfileCardView.findViewById(R.id.departmentInput);
         TextInputEditText semesterInput = editProfileCardView.findViewById(R.id.semesterInput);
 
-        // setting current values
-        nameInput.setText(nameText.getText());
-        nameInput.setEnabled(false);
-        collegeInput.setText(collegeText.getText().toString().replace("College: ", ""));
-        departmentInput.setText(departmentText.getText().toString().replace("Department: ", ""));
-        semesterInput.setText(semesterText.getText().toString().replace("Semester: ", ""));
+        collegeInput.setText(cleanLabel(collegeText.getText().toString()));
+        departmentInput.setText(cleanLabel(departmentText.getText().toString()));
+        semesterInput.setText(cleanLabel(semesterText.getText().toString()));
 
         MaterialButton cancelButton = editProfileCardView.findViewById(R.id.cancelButton);
         MaterialButton saveButton = editProfileCardView.findViewById(R.id.saveButton);
 
         cancelButton.setOnClickListener(v -> hideEditProfileCard());
+        saveButton.setOnClickListener(v -> validateAndUpdate(
+                collegeInput.getText().toString().trim(),
+                departmentInput.getText().toString().trim(),
+                semesterInput.getText().toString().trim()
+        ));
+    }
 
-        saveButton.setOnClickListener(v -> {
-            String college = collegeInput.getText().toString().trim();
-            String department = departmentInput.getText().toString().trim();
-            String semester = semesterInput.getText().toString().trim();
+    private String cleanLabel(String text) {
+        return text.replaceAll("^\\w+:\\s*", "");
+    }
 
-            if (validateInputs(college, department, semester)) {
-                updateUserProfile(college, department, semester);
-            }
-        });
+    private void validateAndUpdate(String college, String department, String semester) {
+        if (validateInputs(college, department, semester)) {
+            updateUserProfile(college, department, semester);
+        }
     }
 
     private boolean validateInputs(String college, String department, String semester) {
         if (college.isEmpty() || department.isEmpty() || semester.isEmpty()) {
-            showMessage("fill all");
+            showMessage("Please fill all fields");
             return false;
         }
 
         try {
             int semesterNum = Integer.parseInt(semester);
             if (semesterNum < 1 || semesterNum > 6) {
-                showMessage("semester should be 1 and 6");
+                showMessage("Semester must be between 1 and 6");
                 return false;
             }
         } catch (NumberFormatException e) {
-            showMessage("not right semester");
+            showMessage("Invalid semester format");
             return false;
         }
-
         return true;
     }
 
     private void updateUserProfile(String college, String department, String semester) {
         String sessionUsername = sessionManagement.getUsername();
         if (sessionUsername == null) {
-            showMessage("session exired login again ");
+            showMessage("Session expired - please login again");
             return;
         }
 
-        DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("users").child(sessionUsername);
+        DatabaseReference userRef = FirebaseDatabase.getInstance()
+                .getReference("users")
+                .child(sessionUsername);
+
         Map<String, Object> updates = new HashMap<>();
         updates.put("college", college);
         updates.put("department", department);
@@ -256,12 +237,22 @@ public class profileFragment extends Fragment {
 
         userRef.updateChildren(updates).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
-                showMessage("profileUpdated");
+                showMessage("Profile updated");
                 hideEditProfileCard();
                 loadProfileData();
             } else {
-                showMessage("failed updadation: " + task.getException().getMessage());
+                showMessage("Update failed: " + task.getException().getMessage());
             }
+        });
+    }
+
+    private void setupLogoutButton() {
+        logoutButton.setOnClickListener(v -> {
+            sessionManagement.logout();
+            Intent intent = new Intent(requireActivity(), loginActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            if (getActivity() != null) getActivity().finishAffinity();
         });
     }
 
@@ -273,20 +264,21 @@ public class profileFragment extends Fragment {
                     .withEndAction(() -> {
                         editProfileCardView.setVisibility(View.GONE);
                         isEditProfileCardVisible = false;
-                        editProfileFab.setEnabled(true); // Re-enable FAB when card is hidden
+                        editProfileFab.setEnabled(true);
                     })
                     .start();
         }
     }
 
     private void showFullScreenImage() {
-        showMessage("fullscreen view coming soon");
+        showMessage("Fullscreen view coming soon");
     }
+
     private void showMessage(String message) {
         if (getView() != null) {
             Snackbar.make(getView(), message, Snackbar.LENGTH_SHORT).show();
         } else {
-            Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
         }
     }
 }

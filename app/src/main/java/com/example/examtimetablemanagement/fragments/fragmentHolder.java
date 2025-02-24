@@ -1,5 +1,6 @@
 package com.example.examtimetablemanagement.fragments;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -22,6 +23,7 @@ public class fragmentHolder extends AppCompatActivity {
     private loginActivity.SessionManagement sessionManagement;
     private String userRole;
 
+    @SuppressLint("NonConstantResourceId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -41,7 +43,7 @@ public class fragmentHolder extends AppCompatActivity {
         bottomNav.setElevation(8f);
         ViewCompat.setElevation(bottomNav, 8f);
 
-        bottomNav.getMenu().clear();
+        // Inflate menu based on user role
         switch (userRole.toLowerCase()) {
             case "student":
                 bottomNav.inflateMenu(R.menu.bottom_nav_student);
@@ -53,22 +55,23 @@ public class fragmentHolder extends AppCompatActivity {
                 bottomNav.inflateMenu(R.menu.bottom_nav_admin);
                 break;
             default:
-
                 bottomNav.inflateMenu(R.menu.bottom_nav_student);
                 break;
         }
+
 
         bottomNav.setOnItemSelectedListener(item -> {
             Fragment selectedFragment = null;
             int itemId = item.getItemId();
 
+            // Replace switch with if-else to handle non-constant resource IDs
             if (itemId == R.id.nav_home) {
                 selectedFragment = new homeFragment();
-            } else if (itemId == R.id.nav_notification && userRole.equalsIgnoreCase("student")) {
+            } else if (itemId == R.id.nav_notification) {
                 selectedFragment = new notificationFragment();
-            } else if (itemId == R.id.nav_generator && userRole.equalsIgnoreCase("teacher")) {
+            } else if (itemId == R.id.nav_generator) {
                 selectedFragment = new generatorFragment();
-            } else if (itemId == R.id.nav_admin && userRole.equalsIgnoreCase("admin")) {
+            } else if (itemId == R.id.nav_admin) {
                 selectedFragment = new adminFragment();
             } else if (itemId == R.id.nav_profile) {
                 selectedFragment = new profileFragment();
@@ -76,17 +79,14 @@ public class fragmentHolder extends AppCompatActivity {
 
             if (selectedFragment != null) {
                 getSupportFragmentManager().beginTransaction()
-                        .setCustomAnimations(
-                                R.anim.slide_in_right,
-                                R.anim.slide_out_left,
-                                R.anim.slide_in_left,
-                                R.anim.slide_out_right
-                        )
+                        .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
                         .replace(R.id.fragment_container, selectedFragment)
                         .commit();
             }
             return true;
         });
+
+        // Default fragment
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.fragment_container, new homeFragment())
