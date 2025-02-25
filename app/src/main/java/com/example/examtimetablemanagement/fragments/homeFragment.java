@@ -9,7 +9,7 @@ import android.view.ViewGroup;
 import androidx.fragment.app.Fragment;
 
 import com.example.examtimetablemanagement.R;
-import com.example.examtimetablemanagement.featurs.teacherFeatures.WeeklyTimeTableActivity;
+import com.example.examtimetablemanagement.featurs.teacherFeatures.TimeTableDisplayActivity;
 import com.example.examtimetablemanagement.featurs.teacherFeatures.examTimeTableCreation;
 import com.example.examtimetablemanagement.featurs.teacherFeatures.timeTableCreation;
 import com.google.android.material.button.MaterialButton;
@@ -40,7 +40,7 @@ public class homeFragment extends Fragment {
         });
 
         viewScheduleButton.setOnClickListener(v -> {
-            Intent intent = new Intent(getActivity(), WeeklyTimeTableActivity.class);
+            Intent intent = new Intent(getActivity(), TimeTableDisplayActivity.class);
             startActivity(intent);
         });
 

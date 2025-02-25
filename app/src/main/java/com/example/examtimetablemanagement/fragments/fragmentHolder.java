@@ -10,11 +10,6 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import com.example.examtimetablemanagement.R;
 import com.example.examtimetablemanagement.authenTication.login.loginActivity;
-import com.example.examtimetablemanagement.fragments.adminFragment;
-import com.example.examtimetablemanagement.fragments.generatorFragment;
-import com.example.examtimetablemanagement.fragments.homeFragment;
-import com.example.examtimetablemanagement.fragments.notificationFragment;
-import com.example.examtimetablemanagement.fragments.profileFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class fragmentHolder extends AppCompatActivity {
@@ -37,41 +32,46 @@ public class fragmentHolder extends AppCompatActivity {
         });
 
         sessionManagement = new loginActivity.SessionManagement(this);
-        userRole = sessionManagement.getUserRole();
+        userRole = sessionManagement.getUserRole().toLowerCase();
 
         bottomNav = findViewById(R.id.bottom_navigation);
         bottomNav.setElevation(8f);
         ViewCompat.setElevation(bottomNav, 8f);
 
         // Inflate menu based on user role
-        switch (userRole.toLowerCase()) {
+        Fragment defaultFragment;
+        switch (userRole) {
             case "student":
                 bottomNav.inflateMenu(R.menu.bottom_nav_student);
+                defaultFragment = new homeStudentFragment();
                 break;
             case "teacher":
                 bottomNav.inflateMenu(R.menu.bottom_nav_teacher);
+                defaultFragment = new homeFragment();
                 break;
             case "admin":
                 bottomNav.inflateMenu(R.menu.bottom_nav_admin);
+                    defaultFragment = new homeAdminFragment();
                 break;
             default:
                 bottomNav.inflateMenu(R.menu.bottom_nav_student);
+                defaultFragment = new homeStudentFragment();
                 break;
         }
-
 
         bottomNav.setOnItemSelectedListener(item -> {
             Fragment selectedFragment = null;
             int itemId = item.getItemId();
 
-            // Replace switch with if-else to handle non-constant resource IDs
             if (itemId == R.id.nav_home) {
-                selectedFragment = new homeFragment();
+                selectedFragment = userRole.equals("student") ? new homeStudentFragment()
+                        : userRole.equals("teacher") ? new homeFragment()
+                        : new homeAdminFragment();
             } else if (itemId == R.id.nav_notification) {
                 selectedFragment = new notificationFragment();
-            } else if (itemId == R.id.nav_generator) {
+            } else if (itemId == R.id.nav_generator && userRole.equals("teacher")) {
                 selectedFragment = new generatorFragment();
-            } else if (itemId == R.id.nav_admin) {
+            } else if (itemId == R.id.nav_admin && userRole.equals("admin")) {
                 selectedFragment = new adminFragment();
             } else if (itemId == R.id.nav_profile) {
                 selectedFragment = new profileFragment();
@@ -86,10 +86,10 @@ public class fragmentHolder extends AppCompatActivity {
             return true;
         });
 
-        // Default fragment
+        // Set default fragment
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_container, new homeFragment())
+                    .replace(R.id.fragment_container, defaultFragment)
                     .commit();
         }
     }

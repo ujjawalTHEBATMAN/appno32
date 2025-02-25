@@ -26,9 +26,6 @@ import com.example.examtimetablemanagement.adapters.TimeTableAdapter;
 import com.example.examtimetablemanagement.models.TimeTable;
 import com.example.examtimetablemanagement.session.SessionManagement;
 import com.google.android.material.textfield.TextInputEditText;
-import com.cloudinary.android.MediaManager;
-import com.cloudinary.android.callback.ErrorInfo;
-import com.cloudinary.android.callback.UploadCallback;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -56,8 +53,6 @@ public class timeTableCreation extends AppCompatActivity {
         setContentView(R.layout.activity_time_table_creation);
         
         initializeViews();
-        
-        setupCloudinary();
         setupSpinners();
         setupListeners();
         loadTimeTable();
@@ -79,20 +74,6 @@ public class timeTableCreation extends AppCompatActivity {
         roomInput = findViewById(R.id.roomInput);
         
         timeTableData = new HashMap<>();
-    }
-    
-
-    private static boolean isCloudinaryInitialized = false;
-    
-    private void setupCloudinary() {
-        if (!isCloudinaryInitialized) {
-            Map<String, String> config = new HashMap<>();
-            config.put("cloud_name", "dxbmuhra0");
-            config.put("api_key", "768683796493156");
-            config.put("api_secret", "TAk8h67Wbm5stfo5485KkHuaZwg");
-            MediaManager.init(this, config);
-            isCloudinaryInitialized = true;
-        }
     }
 
     private void setupSpinners() {
@@ -137,15 +118,33 @@ public class timeTableCreation extends AppCompatActivity {
             return;
         }
 
+        // Generate a unique key for the time slot
+        String uniqueKey = generateUniqueKey(day, timeSlot, subject);
+
+        // Check if this slot already exists
         if (!timeTableData.containsKey(day)) {
             timeTableData.put(day, new HashMap<>());
         }
 
         Map<String, String> daySchedule = timeTableData.get(day);
-        daySchedule.put(timeSlot, subject + " - " + room);
+        
+        // Check for existing entry
+        for (String existingSlot : daySchedule.keySet()) {
+            if (existingSlot.equals(timeSlot)) {
+                Toast.makeText(this, "A subject already exists for this time slot on " + day, Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
 
+        daySchedule.put(timeSlot, subject + " - " + room);
         updateGridView();
         clearInputs();
+    }
+
+    private String generateUniqueKey(String day, String timeSlot, String subject) {
+        return String.format("%s_%s_%s", day.toLowerCase(), 
+            timeSlot.replace(" ", "").toLowerCase(), 
+            subject.replace(" ", "").toLowerCase());
     }
 
     private void clearInputs() {
@@ -195,83 +194,77 @@ public class timeTableCreation extends AppCompatActivity {
     }
 
     private void saveTimeTable() {
-        Map<String, Object> timeTable = new HashMap<>();
-        timeTable.put("schedule", timeTableData);
+        DatabaseReference timeTableRef = FirebaseDatabase.getInstance().getReference().child("timetables");
 
-        String jsonData = new com.google.gson.Gson().toJson(timeTable);
-        String fileName = "timetable.json";
+        List<TimeTable> timeTableEntries = new ArrayList<>();
+        for (Map.Entry<String, Map<String, String>> dayEntry : timeTableData.entrySet()) {
+            String day = dayEntry.getKey();
+            Map<String, String> slots = dayEntry.getValue();
+            
+            for (Map.Entry<String, String> slotEntry : slots.entrySet()) {
+                String timeSlot = slotEntry.getKey();
+                String[] subjectRoom = slotEntry.getValue().split(" - ");
+                String[] times = timeSlot.split(" - ");
+                
+                TimeTable entry = new TimeTable();
+                String uniqueKey = generateUniqueKey(day, timeSlot, subjectRoom[0]);
+                entry.setId(uniqueKey);
+                entry.setDayOfWeek(day);
+                entry.setSubject(subjectRoom[0]);
+                entry.setClassroom(subjectRoom[1]);
+                entry.setStartTime(times[0]);
+                entry.setEndTime(times[1]);
+                entry.setCreatedAt(System.currentTimeMillis());
+                entry.setUpdatedAt(System.currentTimeMillis());
+                
+                timeTableEntries.add(entry);
+            }
+        }
 
-        MediaManager.get().upload(jsonData.getBytes())
-                .option("public_id", fileName)
-                .option("resource_type", "raw")
-                .callback(new UploadCallback() {
-                    @Override
-                    public void onSuccess(String requestId, Map resultData) {
-                        runOnUiThread(() -> {
-                            Toast.makeText(timeTableCreation.this, "Time table saved successfully", Toast.LENGTH_SHORT).show();
-                        });
-                    }
+        Map<String, Object> updates = new HashMap<>();
+        for (TimeTable entry : timeTableEntries) {
+            updates.put("/" + entry.getId(), entry);
+        }
 
-                    @Override
-                    public void onError(String requestId, ErrorInfo error) {
-                        runOnUiThread(() -> {
-                            Toast.makeText(timeTableCreation.this, "Error saving time table: " + error.getDescription(), 
-                                    Toast.LENGTH_SHORT).show();
-                        });
-                    }
-
-                    @Override
-                    public void onStart(String requestId) {}
-
-                    @Override
-                    public void onProgress(String requestId, long bytes, long totalBytes) {}
-
-                    @Override
-                    public void onReschedule(String requestId, ErrorInfo error) {
-                        runOnUiThread(() -> {
-                            Toast.makeText(timeTableCreation.this, "Upload rescheduled: " + error.getDescription(),
-                                    Toast.LENGTH_SHORT).show();
-                        });
-                    }
+        timeTableRef.updateChildren(updates)
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(this, "Time table saved successfully", Toast.LENGTH_SHORT).show();
+                    finish(); // Close the activity after successful save
                 })
-                .dispatch();
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Error saving time table: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
     }
-
     private void loadTimeTable() {
-        String fileName = "timetable.json";
-        String url = MediaManager.get().url().resourceType("raw").generate(fileName);
-
-        new Thread(() -> {
-            try {
-                java.net.URL cloudinaryUrl = new java.net.URL(url);
-                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) cloudinaryUrl.openConnection();
-                conn.setRequestMethod("GET");
-
-                if (conn.getResponseCode() == 200) {
-                    java.io.BufferedReader reader = new java.io.BufferedReader(
-                            new java.io.InputStreamReader(conn.getInputStream()));
-                    StringBuilder response = new StringBuilder();
-                    String line;
-
-                    while ((line = reader.readLine()) != null) {
-                        response.append(line);
-                    }
-                    reader.close();
-
-                    Map<String, Object> timeTable = new com.google.gson.Gson().fromJson(
-                            response.toString(), Map.class);
-                    
-                    if (timeTable != null && timeTable.containsKey("schedule")) {
-                        timeTableData = (Map<String, Map<String, String>>) timeTable.get("schedule");
-                        runOnUiThread(() -> updateGridView());
+        DatabaseReference timeTableRef = FirebaseDatabase.getInstance().getReference().child("timetables");
+        
+        timeTableRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                timeTableData.clear();
+                
+                for (DataSnapshot entrySnapshot : snapshot.getChildren()) {
+                    TimeTable entry = entrySnapshot.getValue(TimeTable.class);
+                    if (entry != null) {
+                        String day = entry.getDayOfWeek();
+                        String timeSlot = entry.getStartTime() + " - " + entry.getEndTime();
+                        String value = entry.getSubject() + " - " + entry.getClassroom();
+                        
+                        if (!timeTableData.containsKey(day)) {
+                            timeTableData.put(day, new HashMap<>());
+                        }
+                        timeTableData.get(day).put(timeSlot, value);
                     }
                 }
-            } catch (Exception e) {
-                runOnUiThread(() -> {
-                    Toast.makeText(timeTableCreation.this, "Error loading time table: " + e.getMessage(), 
-                            Toast.LENGTH_SHORT).show();
-                });
+                
+                updateGridView();
             }
-        }).start();
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Toast.makeText(timeTableCreation.this, "Error loading time table: " + error.getMessage(),
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

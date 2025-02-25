@@ -47,6 +47,11 @@
         <color name="scrim">#52000000</color>
         <color name="overlay_light">#1FFFFFFF</color>
         <color name="overlay_dark">#52000000</color>
+    <color name="icon_color">#274AFD</color>
+    <color name="stroke_color">#FFE528</color>
+    <color name="divider_color">#CA150D</color>
+    <color name="danger_color">#FF210E</color>
+    <color name="primary_color">#4CAF50</color>
 
 
 </resources>

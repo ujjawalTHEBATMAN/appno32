@@ -69,7 +69,7 @@ public class UserInfoFragment extends Fragment {
         lastLoginText = view.findViewById(R.id.lastLoginText);
 
         // Hide the edit profile FAB as this is view-only
-        view.findViewById(R.id.editProfileFab).setVisibility(View.GONE);
+
     }
 
     private void setupProfileImage() {

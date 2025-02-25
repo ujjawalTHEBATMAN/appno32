@@ -16,6 +16,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ExamTimeTableManagement"
         tools:targetApi="31">
+        <activity android:name=".featurs.teacherFeatures.TimeTableDisplayActivity"
+            android:exported="false"/>
         <activity android:name=".featurs.teacherFeatures.WeeklyTimeTableActivity"
             android:exported="false"/>
         <activity

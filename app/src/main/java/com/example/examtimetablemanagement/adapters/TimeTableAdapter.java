@@ -18,9 +18,19 @@ public class TimeTableAdapter extends RecyclerView.Adapter<TimeTableAdapter.View
     private final Context context;
     private final List<TimeTable> timeTableList;
     private OnItemClickListener listener;
+    private OnItemLongClickListener longClickListener;
+    private OnItemDeleteListener deleteListener;
 
     public interface OnItemClickListener {
         void onItemClick(TimeTable timeTable);
+    }
+
+    public interface OnItemLongClickListener {
+        boolean onItemLongClick(TimeTable timeTable, int position);
+    }
+
+    public interface OnItemDeleteListener {
+        void onItemDelete(TimeTable timeTable, int position);
     }
 
     public TimeTableAdapter(Context context, List<TimeTable> timeTableList) {
@@ -30,6 +40,14 @@ public class TimeTableAdapter extends RecyclerView.Adapter<TimeTableAdapter.View
 
     public void setOnItemClickListener(OnItemClickListener listener) {
         this.listener = listener;
+    }
+
+    public void setOnItemLongClickListener(OnItemLongClickListener listener) {
+        this.longClickListener = listener;
+    }
+
+    public void setOnItemDeleteListener(OnItemDeleteListener listener) {
+        this.deleteListener = listener;
     }
 
     @NonNull
@@ -44,13 +62,20 @@ public class TimeTableAdapter extends RecyclerView.Adapter<TimeTableAdapter.View
         TimeTable timeTable = timeTableList.get(position);
         holder.subjectTextView.setText(timeTable.getSubject());
         holder.teacherTextView.setText(timeTable.getTeacher());
-        holder.classroomTextView.setText(timeTable.getClassroom());
-        holder.timeTextView.setText(String.format("%s - %s", timeTable.getStartTime(), timeTable.getEndTime()));
+        holder.classroomChip.setText(timeTable.getClassroom());
+        holder.timeChip.setText(String.format("%s - %s", timeTable.getStartTime(), timeTable.getEndTime()));
 
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onItemClick(timeTable);
             }
+        });
+
+        holder.itemView.setOnLongClickListener(v -> {
+            if (longClickListener != null) {
+                return longClickListener.onItemLongClick(timeTable, position);
+            }
+            return false;
         });
     }
 
@@ -62,15 +87,15 @@ public class TimeTableAdapter extends RecyclerView.Adapter<TimeTableAdapter.View
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView subjectTextView;
         TextView teacherTextView;
-        TextView classroomTextView;
-        TextView timeTextView;
+        com.google.android.material.chip.Chip classroomChip;
+        com.google.android.material.chip.Chip timeChip;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             subjectTextView = itemView.findViewById(R.id.subjectTextView);
             teacherTextView = itemView.findViewById(R.id.teacherTextView);
-            classroomTextView = itemView.findViewById(R.id.classroomTextView);
-            timeTextView = itemView.findViewById(R.id.timeTextView);
+            classroomChip = itemView.findViewById(R.id.classroomChip);
+            timeChip = itemView.findViewById(R.id.timeChip);
         }
     }
 
@@ -78,5 +103,16 @@ public class TimeTableAdapter extends RecyclerView.Adapter<TimeTableAdapter.View
         timeTableList.clear();
         timeTableList.addAll(newTimeTableList);
         notifyDataSetChanged();
+    }
+
+    public void removeItem(int position) {
+        if (position >= 0 && position < timeTableList.size()) {
+            TimeTable removedItem = timeTableList.get(position);
+            timeTableList.remove(position);
+            notifyItemRemoved(position);
+            if (deleteListener != null) {
+                deleteListener.onItemDelete(removedItem, position);
+            }
+        }
     }
 }

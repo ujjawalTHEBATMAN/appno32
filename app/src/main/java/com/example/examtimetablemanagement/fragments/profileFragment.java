@@ -5,10 +5,13 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.transition.TransitionManager;
+
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.example.examtimetablemanagement.R;
@@ -16,31 +19,36 @@ import com.example.examtimetablemanagement.authenTication.login.loginActivity;
 import com.facebook.shimmer.ShimmerFrameLayout;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textview.MaterialTextView;
-import com.google.firebase.database.*;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
 import de.hdodenhof.circleimageview.CircleImageView;
 import java.util.HashMap;
 import java.util.Map;
 
 public class profileFragment extends Fragment {
 
-    // View declarations
     private ShimmerFrameLayout shimmerLayout;
     private CircleImageView profileImage;
-    private MaterialButton logoutButton;
+    private LinearLayout logoutButton;
     private loginActivity.SessionManagement sessionManagement;
     private MaterialTextView nameText, emailText, collegeText, departmentText,
             semesterText, userRoleText, createdAtText, lastLoginText;
-    private ExtendedFloatingActionButton editProfileFab;
+    private FloatingActionButton editProfileFab;
     private DatabaseReference userRef;
-    private View editProfileCardView;
-    private boolean isEditProfileCardVisible = false;
 
-    public profileFragment() {
-        // Required empty public constructor
-    }
+    private View editProfileCardContainer;
+    private boolean isEditProfileCardVisible = false;
+    private boolean isEditProfileCardSetup = false;
+
+    public profileFragment() {}
 
     public static profileFragment newInstance() {
         return new profileFragment();
@@ -75,9 +83,8 @@ public class profileFragment extends Fragment {
         userRoleText = view.findViewById(R.id.roleText);
         createdAtText = view.findViewById(R.id.createdAtText);
         lastLoginText = view.findViewById(R.id.lastLoginText);
-        editProfileFab = view.findViewById(R.id.editProfileFab);
+        editProfileFab = view.findViewById(R.id.editProfileFAB);
         logoutButton = view.findViewById(R.id.logoutButton);
-
         sessionManagement = new loginActivity.SessionManagement(requireContext());
     }
 
@@ -92,7 +99,6 @@ public class profileFragment extends Fragment {
             showMessage("Session expired");
             return;
         }
-
         userRef.child(sessionUsername).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -124,16 +130,19 @@ public class profileFragment extends Fragment {
         createdAtText.setText(formatValue("Created At", snapshot, "createdAt"));
         lastLoginText.setText(formatValue("Last Login", snapshot, "lastLogin"));
     }
-
     private String getValueOrNA(DataSnapshot snapshot, String key) {
         return snapshot.child(key).exists() ?
                 snapshot.child(key).getValue().toString() : "N/A";
     }
 
+
+
+
+
+
     private String formatValue(String prefix, DataSnapshot snapshot, String key) {
         return String.format("%s: %s", prefix, getValueOrNA(snapshot, key));
     }
-
     private void loadProfileImage(String imageUrl) {
         Glide.with(requireContext())
                 .load(imageUrl != null ? imageUrl : R.drawable.collageimage)
@@ -152,49 +161,64 @@ public class profileFragment extends Fragment {
     }
 
     private void showEditProfileCard() {
-        if (getView() == null) return;
+        if (editProfileCardContainer == null) return;
 
-        if (editProfileCardView == null) {
-            editProfileCardView = LayoutInflater.from(requireContext())
-                    .inflate(R.layout.edit_profile_card, (ViewGroup) getView(), false);
-            ((ViewGroup) getView()).addView(editProfileCardView);
-            setupEditProfileCard();
+
+        ViewGroup container = (ViewGroup) editProfileCardContainer;
+        if (container.getChildCount() == 0) {
+            LayoutInflater.from(requireContext()).inflate(R.layout.edit_profile_card, container, true);
         }
 
-        editProfileCardView.setVisibility(View.VISIBLE);
-        editProfileCardView.setAlpha(0f);
-        editProfileCardView.animate()
+        editProfileCardContainer.setVisibility(View.VISIBLE);
+        editProfileCardContainer.setAlpha(0f);
+        editProfileCardContainer.animate()
                 .alpha(1f)
                 .setDuration(300)
+                .withEndAction(() -> {
+                    isEditProfileCardVisible = true;
+                    editProfileFab.setEnabled(true);
+                    if (!isEditProfileCardSetup) {
+                        setupEditProfileCard();
+                        isEditProfileCardSetup = true;
+                    }
+                })
                 .start();
-        isEditProfileCardVisible = true;
     }
 
     private void setupEditProfileCard() {
-        TextInputEditText collegeInput = editProfileCardView.findViewById(R.id.collegeInput);
-        TextInputEditText departmentInput = editProfileCardView.findViewById(R.id.departmentInput);
-        TextInputEditText semesterInput = editProfileCardView.findViewById(R.id.semesterInput);
+        ViewGroup container = (ViewGroup) editProfileCardContainer;
+        View cardView = container.getChildAt(0);
+        TextInputEditText nameInput = cardView.findViewById(R.id.nameInput);
+        TextInputEditText collegeInput = cardView.findViewById(R.id.collegeInput);
+        TextInputEditText departmentInput = cardView.findViewById(R.id.departmentInput);
+        TextInputEditText semesterInput = cardView.findViewById(R.id.semesterInput);
 
+
+
+
+
+
+
+        nameInput.setText(cleanLabel(nameText.getText().toString()));
         collegeInput.setText(cleanLabel(collegeText.getText().toString()));
         departmentInput.setText(cleanLabel(departmentText.getText().toString()));
         semesterInput.setText(cleanLabel(semesterText.getText().toString()));
-
-        MaterialButton cancelButton = editProfileCardView.findViewById(R.id.cancelButton);
-        MaterialButton saveButton = editProfileCardView.findViewById(R.id.saveButton);
-
+        MaterialButton cancelButton = cardView.findViewById(R.id.cancelButton);
+        MaterialButton saveButton = cardView.findViewById(R.id.saveButton);
         cancelButton.setOnClickListener(v -> hideEditProfileCard());
         saveButton.setOnClickListener(v -> validateAndUpdate(
+                nameInput.getText().toString().trim(),
                 collegeInput.getText().toString().trim(),
                 departmentInput.getText().toString().trim(),
                 semesterInput.getText().toString().trim()
         ));
     }
-
     private String cleanLabel(String text) {
-        return text.replaceAll("^\\w+:\\s*", "");
+        int colonIndex = text.indexOf(":");
+        return colonIndex != -1 ? text.substring(colonIndex + 1).trim() : text.trim();
     }
 
-    private void validateAndUpdate(String college, String department, String semester) {
+    private void validateAndUpdate(String name, String college, String department, String semester) {
         if (validateInputs(college, department, semester)) {
             updateUserProfile(college, department, semester);
         }
@@ -205,7 +229,6 @@ public class profileFragment extends Fragment {
             showMessage("Please fill all fields");
             return false;
         }
-
         try {
             int semesterNum = Integer.parseInt(semester);
             if (semesterNum < 1 || semesterNum > 6) {
@@ -219,6 +242,7 @@ public class profileFragment extends Fragment {
         return true;
     }
 
+    // Reuses the already initialized userRef to update the profile information.
     private void updateUserProfile(String college, String department, String semester) {
         String sessionUsername = sessionManagement.getUsername();
         if (sessionUsername == null) {
@@ -226,16 +250,15 @@ public class profileFragment extends Fragment {
             return;
         }
 
-        DatabaseReference userRef = FirebaseDatabase.getInstance()
-                .getReference("users")
-                .child(sessionUsername);
+        // Reuse the userRef field and get the current user node
+        DatabaseReference currentUserRef = userRef.child(sessionUsername);
 
         Map<String, Object> updates = new HashMap<>();
         updates.put("college", college);
         updates.put("department", department);
         updates.put("semester", semester);
 
-        userRef.updateChildren(updates).addOnCompleteListener(task -> {
+        currentUserRef.updateChildren(updates).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 showMessage("Profile updated");
                 hideEditProfileCard();
@@ -257,12 +280,12 @@ public class profileFragment extends Fragment {
     }
 
     private void hideEditProfileCard() {
-        if (editProfileCardView != null) {
-            editProfileCardView.animate()
+        if (editProfileCardContainer != null) {
+            editProfileCardContainer.animate()
                     .alpha(0f)
                     .setDuration(300)
                     .withEndAction(() -> {
-                        editProfileCardView.setVisibility(View.GONE);
+                        editProfileCardContainer.setVisibility(View.GONE);
                         isEditProfileCardVisible = false;
                         editProfileFab.setEnabled(true);
                     })
