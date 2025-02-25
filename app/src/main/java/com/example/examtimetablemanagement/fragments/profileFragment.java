@@ -1,54 +1,30 @@
 package com.example.examtimetablemanagement.fragments;
 
-import android.content.Intent;
-import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.LinearLayout;
-import android.widget.Toast;
-
-import androidx.annotation.NonNull;
-import androidx.fragment.app.Fragment;
-import androidx.transition.TransitionManager;
-
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
-import com.example.examtimetablemanagement.R;
-import com.example.examtimetablemanagement.authenTication.login.loginActivity;
-import com.facebook.shimmer.ShimmerFrameLayout;
+import android.content.Intent; import android.os.Bundle; import android.view.LayoutInflater; import android.view.View; import android.view.ViewGroup; import android.widget.LinearLayout; import android.widget.Toast; import androidx.annotation.NonNull; import androidx.fragment.app.Fragment; import androidx.transition.TransitionManager; import com.bumptech.glide.Glide; import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions; import com.example.examtimetablemanagement.R; import com.example.examtimetablemanagement.authenTication.login.loginActivity; import com.facebook.shimmer.ShimmerFrameLayout;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
-import com.google.android.material.textfield.TextInputEditText;
-import com.google.android.material.textview.MaterialTextView;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
-
-import de.hdodenhof.circleimageview.CircleImageView;
-import java.util.HashMap;
-import java.util.Map;
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton; import com.google.android.material.snackbar.Snackbar; import com.google.android.material.textfield.TextInputEditText; import com.google.android.material.textview.MaterialTextView; import com.google.firebase.database.*; import de.hdodenhof.circleimageview.CircleImageView; import java.util.HashMap; import java.util.Map;
 
 public class profileFragment extends Fragment {
 
+
+    // View declarations
     private ShimmerFrameLayout shimmerLayout;
     private CircleImageView profileImage;
+    // Updated the type for logoutButton from MaterialButton to LinearLayout
     private LinearLayout logoutButton;
     private loginActivity.SessionManagement sessionManagement;
     private MaterialTextView nameText, emailText, collegeText, departmentText,
             semesterText, userRoleText, createdAtText, lastLoginText;
-    private FloatingActionButton editProfileFab;
+    private ExtendedFloatingActionButton editProfileFab;
     private DatabaseReference userRef;
-
+    // Reference to the edit profile container defined in XML
     private View editProfileCardContainer;
     private boolean isEditProfileCardVisible = false;
     private boolean isEditProfileCardSetup = false;
 
-    public profileFragment() {}
+    public profileFragment() {
+        // Required empty public constructor
+    }
 
     public static profileFragment newInstance() {
         return new profileFragment();
@@ -67,7 +43,6 @@ public class profileFragment extends Fragment {
         initializeViews(view);
         setupProfileImage();
         loadProfileData();
-        setupFabButton();
         setupLogoutButton();
         return view;
     }
@@ -83,8 +58,12 @@ public class profileFragment extends Fragment {
         userRoleText = view.findViewById(R.id.roleText);
         createdAtText = view.findViewById(R.id.createdAtText);
         lastLoginText = view.findViewById(R.id.lastLoginText);
-        editProfileFab = view.findViewById(R.id.editProfileFAB);
+
+        // Using LinearLayout here since logoutButton is a LinearLayout in the XML
         logoutButton = view.findViewById(R.id.logoutButton);
+
+
+
         sessionManagement = new loginActivity.SessionManagement(requireContext());
     }
 
@@ -99,6 +78,7 @@ public class profileFragment extends Fragment {
             showMessage("Session expired");
             return;
         }
+
         userRef.child(sessionUsername).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -130,19 +110,16 @@ public class profileFragment extends Fragment {
         createdAtText.setText(formatValue("Created At", snapshot, "createdAt"));
         lastLoginText.setText(formatValue("Last Login", snapshot, "lastLogin"));
     }
+
     private String getValueOrNA(DataSnapshot snapshot, String key) {
         return snapshot.child(key).exists() ?
                 snapshot.child(key).getValue().toString() : "N/A";
     }
 
-
-
-
-
-
     private String formatValue(String prefix, DataSnapshot snapshot, String key) {
         return String.format("%s: %s", prefix, getValueOrNA(snapshot, key));
     }
+
     private void loadProfileImage(String imageUrl) {
         Glide.with(requireContext())
                 .load(imageUrl != null ? imageUrl : R.drawable.collageimage)
@@ -151,74 +128,19 @@ public class profileFragment extends Fragment {
                 .into(profileImage);
     }
 
-    private void setupFabButton() {
-        editProfileFab.setOnClickListener(v -> {
-            if (!isEditProfileCardVisible) {
-                editProfileFab.setEnabled(false);
-                showEditProfileCard();
-            }
-        });
-    }
-
-    private void showEditProfileCard() {
-        if (editProfileCardContainer == null) return;
-
-
-        ViewGroup container = (ViewGroup) editProfileCardContainer;
-        if (container.getChildCount() == 0) {
-            LayoutInflater.from(requireContext()).inflate(R.layout.edit_profile_card, container, true);
-        }
-
-        editProfileCardContainer.setVisibility(View.VISIBLE);
-        editProfileCardContainer.setAlpha(0f);
-        editProfileCardContainer.animate()
-                .alpha(1f)
-                .setDuration(300)
-                .withEndAction(() -> {
-                    isEditProfileCardVisible = true;
-                    editProfileFab.setEnabled(true);
-                    if (!isEditProfileCardSetup) {
-                        setupEditProfileCard();
-                        isEditProfileCardSetup = true;
-                    }
-                })
-                .start();
-    }
-
-    private void setupEditProfileCard() {
-        ViewGroup container = (ViewGroup) editProfileCardContainer;
-        View cardView = container.getChildAt(0);
-        TextInputEditText nameInput = cardView.findViewById(R.id.nameInput);
-        TextInputEditText collegeInput = cardView.findViewById(R.id.collegeInput);
-        TextInputEditText departmentInput = cardView.findViewById(R.id.departmentInput);
-        TextInputEditText semesterInput = cardView.findViewById(R.id.semesterInput);
 
 
 
 
 
 
-
-        nameInput.setText(cleanLabel(nameText.getText().toString()));
-        collegeInput.setText(cleanLabel(collegeText.getText().toString()));
-        departmentInput.setText(cleanLabel(departmentText.getText().toString()));
-        semesterInput.setText(cleanLabel(semesterText.getText().toString()));
-        MaterialButton cancelButton = cardView.findViewById(R.id.cancelButton);
-        MaterialButton saveButton = cardView.findViewById(R.id.saveButton);
-        cancelButton.setOnClickListener(v -> hideEditProfileCard());
-        saveButton.setOnClickListener(v -> validateAndUpdate(
-                nameInput.getText().toString().trim(),
-                collegeInput.getText().toString().trim(),
-                departmentInput.getText().toString().trim(),
-                semesterInput.getText().toString().trim()
-        ));
-    }
     private String cleanLabel(String text) {
+        // Remove any label prefix (e.g., "College: " -> "")
         int colonIndex = text.indexOf(":");
         return colonIndex != -1 ? text.substring(colonIndex + 1).trim() : text.trim();
     }
 
-    private void validateAndUpdate(String name, String college, String department, String semester) {
+    private void validateAndUpdate(String college, String department, String semester) {
         if (validateInputs(college, department, semester)) {
             updateUserProfile(college, department, semester);
         }
@@ -229,6 +151,7 @@ public class profileFragment extends Fragment {
             showMessage("Please fill all fields");
             return false;
         }
+
         try {
             int semesterNum = Integer.parseInt(semester);
             if (semesterNum < 1 || semesterNum > 6) {
@@ -242,7 +165,6 @@ public class profileFragment extends Fragment {
         return true;
     }
 
-    // Reuses the already initialized userRef to update the profile information.
     private void updateUserProfile(String college, String department, String semester) {
         String sessionUsername = sessionManagement.getUsername();
         if (sessionUsername == null) {
@@ -250,15 +172,16 @@ public class profileFragment extends Fragment {
             return;
         }
 
-        // Reuse the userRef field and get the current user node
-        DatabaseReference currentUserRef = userRef.child(sessionUsername);
+        DatabaseReference userRef = FirebaseDatabase.getInstance()
+                .getReference("users")
+                .child(sessionUsername);
 
         Map<String, Object> updates = new HashMap<>();
         updates.put("college", college);
         updates.put("department", department);
         updates.put("semester", semester);
 
-        currentUserRef.updateChildren(updates).addOnCompleteListener(task -> {
+        userRef.updateChildren(updates).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 showMessage("Profile updated");
                 hideEditProfileCard();

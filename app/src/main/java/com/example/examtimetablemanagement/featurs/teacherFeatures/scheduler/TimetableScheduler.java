@@ -1,4 +1,4 @@
-package com.example.examtimetablemanagement.scheduler;
+package com.example.examtimetablemanagement.featurs.teacherFeatures.scheduler;
 
 import com.example.examtimetablemanagement.models.TimeTable;
 import java.util.List;
